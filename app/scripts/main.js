@@ -18,12 +18,13 @@ function RTCDataChannelForChrome() {
     reliable: false
   });
 
+  // transport after channel is setup
   setChannelEvents(offererDataChannel, 'offerer');
 
   offerer.onicecandidate = function (event) {
     if (!event || !event.candidate) return;
     answerer && (function(){
-      console.log(event.candidate);
+      console.log("ENVENT OFFERER", event.candidate);
       answerer.addIceCandidate(event.candidate);
     })();
   };
@@ -38,8 +39,9 @@ function RTCDataChannelForChrome() {
 
   offerer.createOffer(function (sessionDescription) {
     offerer.setLocalDescription(sessionDescription);
+    // signaling
     createAnswer(sessionDescription);
-  }, null, mediaConstraints);
+  }, null, mediaConstraints); //null should be error handler
 
 
   function createAnswer(offerSDP) {
@@ -52,27 +54,28 @@ function RTCDataChannelForChrome() {
 
     answerer.onicecandidate = function (event) {
       if (!event || !event.candidate) return;
-      offerer && offerer.addIceCandidate(event.candidate);
+      offerer && (function(){
+        console.log("ENVENT ANSWERER", event.candidate);
+        //sigaling
+        offerer.addIceCandidate(event.candidate);
+        })();
     };
 
     answerer.setRemoteDescription(offerSDP);
     answerer.createAnswer(function (sessionDescription) {
       answerer.setLocalDescription(sessionDescription);
+      //signaling
       offerer.setRemoteDescription(sessionDescription);
     }, null, mediaConstraints);
   }
-
+  // show
   function setChannelEvents(channel, channelNameForConsoleOutput) {
     channel.onmessage = function (event) {
       console.debug(channelNameForConsoleOutput, 'received a message:', event.data);
-
-      if (channelNameForConsoleOutput == 'offerer')
-        console.log(event.data);
-      else
-        console.log(event.data);
     };
 
     channel.onopen = function () {
+      // add serd here
       channel.send('first text message over RTP data ports');
     };
   }
